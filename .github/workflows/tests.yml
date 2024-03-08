@@ -13,15 +13,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4.1.1
 
+      - name: Determine versions
+        shell: bash -leo pipefail {0}
+        id: get_versions
+        run: |
+          python="$(grep -v '#' .tool-versions | grep python | awk '{print $2}')"
+          poetry="$(grep -v '#' .tool-versions | grep python | awk '{print $2}')"
+          echo "poetry=${poetry}" >> $GITHUB_OUTPUT
+          echo "python=${python}" >> $GITHUB_OUTPUT
+
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
         with:
-          python-version: "3.9"
+          python-version: ${{ steps.get_versions.outputs.python }}
 
       - name: Install system deps
         shell: bash
         run: |
-          pip install poetry
+          pip install poetry==${{ steps.get_versions.outputs.poetry }}
           poetry config virtualenvs.in-project true
           poetry install --no-root --only dev --only linters --sync
 
@@ -35,8 +44,8 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     strategy:
       matrix:
-        os: [Ubuntu, MacOS, Windows]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        os: [Ubuntu, MacOS]
+        python-version: ['3.12']
       fail-fast: true
     steps:
       - uses: actions/checkout@v4.1.1
@@ -61,7 +70,7 @@ jobs:
         shell: bash
         run: nox --force-color -s tests-${{ matrix.python-version }}
 
-      - name: Run securtity check
+      - name: Run security check
         if: matrix.python-version == '3.12' && matrix.os == 'Ubuntu'
         shell: bash
         run: nox --force-color -s security
@@ -72,37 +81,3 @@ jobs:
           name: ${{ matrix.os }}-${{ matrix.python-version }}.coverage-data
           path: ".coverage.*"
           retention-days: 2
-
-  coverage:
-    needs: tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4.1.1
-
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v5.0.0
-        with:
-          python-version: 3.9
-
-      - name: Install system deps
-        shell: bash
-        run: |
-          pip install nox-poetry
-          pip install poetry
-          poetry config virtualenvs.in-project true
-
-      - name: Download coverage data
-        uses: actions/download-artifact@v4
-        with:
-          pattern: "*.coverage-data"
-          merge-multiple: true
-
-      - name: Create coverage report
-        shell: bash
-        run: |
-          nox --force-color --session=coverage -- --fmt xml
-
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v3.1.4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}

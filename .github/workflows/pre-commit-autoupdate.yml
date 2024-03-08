@@ -12,15 +12,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4.1.1
 
+      - name: Determine versions
+        shell: bash -leo pipefail {0}
+        id: get_versions
+        run: |
+          python="$(grep -v '#' .tool-versions | grep python | awk '{print $2}')"
+          poetry="$(grep -v '#' .tool-versions | grep python | awk '{print $2}')"
+          echo "poetry=${poetry}" >> $GITHUB_OUTPUT
+          echo "python=${python}" >> $GITHUB_OUTPUT
+
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
         with:
-          python-version: "3.11"
+          python-version: ${{ steps.get_versions.outputs.python }}
 
       - name: Install system deps
         shell: bash
         run: |
-          pip install poetry
+          pip install poetry==${{ steps.get_versions.outputs.poetry }}
           poetry config virtualenvs.in-project true
           poetry install --no-root --only dev --only linters --sync
 
