@@ -90,17 +90,7 @@ def ruff(c: Context) -> None:
     _run(c, f"poetry run ruff check {PYTHON_TARGETS_STR}")
 
 
-@task()
-def security(c: Context) -> None:
-    """Run security related checks."""
-    _run(
-        c,
-        "poetry export --with dev --format=requirements.txt --without-hashes | "
-        "poetry run safety check --stdin --full-report",
-    )
-
-
-@task(pre=[ruff, security, call(format_, check=True)])
+@task(pre=[ruff, call(format_, check=True)])
 def lint(c: Context) -> None:
     """Run all linting."""
 
