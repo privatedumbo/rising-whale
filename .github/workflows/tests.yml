@@ -18,7 +18,7 @@ jobs:
         id: get_versions
         run: |
           python="$(grep -v '#' .tool-versions | grep python | awk '{print $2}')"
-          poetry="$(grep -v '#' .tool-versions | grep python | awk '{print $2}')"
+          poetry="$(grep -v '#' .tool-versions | grep poetry | awk '{print $2}')"
           echo "poetry=${poetry}" >> $GITHUB_OUTPUT
           echo "python=${python}" >> $GITHUB_OUTPUT
 
